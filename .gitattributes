@@ -1,0 +1,4 @@
+# Scripts, DAGs and SQL run inside Linux containers: keep LF line endings on every
+# checkout, including Windows clones with core.autocrlf=true.
+* text=auto eol=lf
+*.png binary

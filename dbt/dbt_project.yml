@@ -1,0 +1,36 @@
+name: dirham_watch
+version: "1.0.0"
+config-version: 2
+require-dbt-version: [">=1.10.0", "<2.0.0"]
+
+profile: dirham_watch
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+analysis-paths: ["analyses"]
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # Reference date for freshness calculations. Empty means current_date; CI pins it so
+  # tests on fixed fixture data stay deterministic.
+  as_of_date: ""
+  # Base year of the HCP index (IPC base 100 = 2017); FX series are rebased to match.
+  rebase_year: 2017
+  # Dirham basket since April 2015 (Bank Al-Maghrib): 60% euro, 40% US dollar.
+  basket_eur_weight: 0.6
+  basket_usd_weight: 0.4
+
+models:
+  dirham_watch:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table
+
+data_tests:
+  dirham_watch:
+    +store_failures: false

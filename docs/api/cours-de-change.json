@@ -1,0 +1,103 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Cours de change",
+        "description": "",
+        "version": "Version1"
+    },
+    "servers": [
+        {
+            "url": "https://api.centralbankofmorocco.ma/cours/Version1"
+        }
+    ],
+    "paths": {
+        "/api/CoursVirement": {
+            "get": {
+                "summary": "GET (CoursVirement)",
+                "description": "Les cours virements de la journée sont disponibles à partir de 12h30m (Heure locale)\n<br>A noter qu'il n'y a pas de cotation pour les jours fériés au Maroc ainsi que pour les journées du 25/12 et 26/12.",
+                "operationId": "5aa966fceb93cf8a3cd89525",
+                "parameters": [
+                    {
+                        "name": "libDevise",
+                        "in": "query",
+                        "description": "Devise (EUR, USD, ...)",
+                        "schema": {
+                            "type": ""
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Date Valeur (2018-02-12T21:44:09.921Z) par défaut la date du jour",
+                        "schema": {
+                            "type": ""
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "204": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/CoursBBE": {
+            "get": {
+                "summary": "GET (CoursBBE)",
+                "description": "Les cours des billets de Banque étrangers de la journée sont disponibles à partir de 8h30m (Heure locale)\n<br>A noter qu'il n'y a pas de cotation pour les jours fériés au Maroc ainsi que pour les journées du 25/12 et 26/12.",
+                "operationId": "5aa967f97d0c114384d56cbc",
+                "parameters": [
+                    {
+                        "name": "libDevise",
+                        "in": "query",
+                        "description": "Devise (EUR, USD, ...)",
+                        "schema": {
+                            "type": ""
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Date Valeur (2018-02-12T21:44:09.921Z) par défaut la date du jour",
+                        "schema": {
+                            "type": ""
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "204": {
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "apiKeyHeader": {
+                "type": "apiKey",
+                "name": "Ocp-Apim-Subscription-Key",
+                "in": "header"
+            },
+            "apiKeyQuery": {
+                "type": "apiKey",
+                "name": "subscription-key",
+                "in": "query"
+            }
+        }
+    },
+    "security": [
+        {
+            "apiKeyHeader": []
+        },
+        {
+            "apiKeyQuery": []
+        }
+    ]
+}

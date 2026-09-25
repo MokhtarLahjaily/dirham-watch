@@ -1,0 +1,350 @@
+[
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "USD",
+  "moyen": 9.3261,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "MRO",
+  "moyen": 23.569,
+  "uniteDevise": 100
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "LYD",
+  "moyen": 1.8921,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "GIP",
+  "moyen": 12.452,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "CHF",
+  "moyen": 11.765,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "QAR",
+  "moyen": 2.558,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "SEK",
+  "moyen": 99.505,
+  "uniteDevise": 100
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "RUB",
+  "moyen": 0.1134,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "INR",
+  "moyen": 0.0992,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "OMR",
+  "moyen": 24.224,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "DKK",
+  "moyen": 144.18,
+  "uniteDevise": 100
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "NOK",
+  "moyen": 96.443,
+  "uniteDevise": 100
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "XOF",
+  "moyen": 1.6423,
+  "uniteDevise": 100
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "TRY",
+  "moyen": 0.2102,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "KWD",
+  "moyen": 30.345,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "EUR",
+  "moyen": 10.7729,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "AUD",
+  "moyen": 6.4685,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "ZAR",
+  "moyen": 0.5476,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "AED",
+  "moyen": 2.539,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "BRL",
+  "moyen": 1.7839,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "JOD",
+  "moyen": 13.159,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "CNY",
+  "moyen": 1.3505,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "BHD",
+  "moyen": 24.657,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "SAR",
+  "moyen": 2.4859,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "JPY",
+  "moyen": 5.8475,
+  "uniteDevise": 100
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "DZD",
+  "moyen": 0.7024,
+  "uniteDevise": 10
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "TND",
+  "moyen": 3.1825,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "EGP",
+  "moyen": 0.1771,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "CAD",
+  "moyen": 6.7434,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "GBP",
+  "moyen": 12.452,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "EUR",
+  "moyen": 10.7729,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "CAD",
+  "moyen": 6.7434,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "GBP",
+  "moyen": 12.452,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "DKK",
+  "moyen": 144.18,
+  "uniteDevise": 100
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "SEK",
+  "moyen": 99.505,
+  "uniteDevise": 100
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "CHF",
+  "moyen": 11.765,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "JPY",
+  "moyen": 5.8475,
+  "uniteDevise": 100
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "KWD",
+  "moyen": 30.345,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "SAR",
+  "moyen": 2.4859,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "AED",
+  "moyen": 2.539,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "CNY",
+  "moyen": 1.3505,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "JOD",
+  "moyen": 13.159,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "ZAR",
+  "moyen": 0.5476,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "AUD",
+  "moyen": 6.4685,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "XOF",
+  "moyen": 1.6423,
+  "uniteDevise": 100
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "EGP",
+  "moyen": 0.1771,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "RUB",
+  "moyen": 0.1134,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "INR",
+  "moyen": 0.0992,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "TRY",
+  "moyen": 0.2102,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "OMR",
+  "moyen": 24.224,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "GIP",
+  "moyen": 12.452,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "QAR",
+  "moyen": 2.558,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "BHD",
+  "moyen": 24.657,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "BRL",
+  "moyen": 1.7839,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "TND",
+  "moyen": 3.1825,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "DZD",
+  "moyen": 0.7024,
+  "uniteDevise": 10
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "LYD",
+  "moyen": 1.8921,
+  "uniteDevise": 1
+ },
+ {
+  "date": "2026-03-26T12:30:00",
+  "libDevise": "NOK",
+  "moyen": 96.443,
+  "uniteDevise": 100
+ }
+]

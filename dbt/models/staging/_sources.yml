@@ -1,0 +1,84 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: >
+      Landing tables written by the Python ingestion (ingestion/src/dirham_watch). They hold
+      what the sources returned; typing and deduplication happen in staging.
+    tables:
+      - name: fx_rates
+        description: >
+          Bank Al-Maghrib transfer rates (cours virement), MAD per `unit` of foreign
+          currency. `source` is `bam` for the direct API or `frankfurter` for the keyless
+          mirror of the same BAM series.
+        config:
+          # Freshness in business days: see macros/freshness.sql. Fails when the newest
+          # rate is more than 3 business days old.
+          loaded_at_query: "{{ fx_business_day_loaded_at(this) }}"
+          freshness:
+            warn_after: {count: 1, period: day}
+            error_after: {count: 3, period: day}
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "mid_rate is not null or (bid_rate is not null and ask_rate is not null)"
+        columns:
+          - name: source
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ["bam", "frankfurter"]
+          - name: rate_date
+            data_tests: [not_null]
+          - name: currency
+            data_tests: [not_null]
+          - name: unit
+            description: Quoting unit, e.g. 100 for JPY, SEK, NOK, DKK and XOF.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: [1, 10, 100, 1000]
+                    quote: false
+          - name: mid_rate
+            description: "`moyen`: mid rate. Missing on pre-2016 records."
+          - name: bid_rate
+            description: "`achat`: buying rate, on pre-2016 records."
+          - name: ask_rate
+            description: "`vente`: selling rate, on pre-2016 records."
+          - name: payload
+            description: The source record as JSON.
+          - name: loaded_at
+
+      - name: cpi_index
+        description: >
+          HCP consumer price index (IPC, base 100 = 2017), monthly, from the HCP statistics
+          database API (bds.hcp.ma, indicator I4166): one row per city, product group and
+          month.
+        config:
+          loaded_at_field: "period_month::timestamp"
+          # HCP releases each month around the 20th of the next; its database is updated
+          # less often, so this only warns.
+          freshness:
+            warn_after: {count: 80, period: day}
+        columns:
+          - name: city
+            data_tests: [not_null]
+          - name: product_group
+            description: Code and label, e.g. `(01) PRODUITS ALIMENTAIRES ET BOISSONS NON ALCOOLISÉES`.
+            data_tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: "~ '^\\([0-9A-Z]+\\) '"
+          - name: period_month
+            data_tests: [not_null]
+          - name: index_value
+            description: Text as published; `-` means not available.
+            data_tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: "~ '^(-|[0-9]+(\\.[0-9]+)?)$'"

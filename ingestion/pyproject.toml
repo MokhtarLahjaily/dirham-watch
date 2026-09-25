@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dirham-watch"
+version = "0.1.0"
+description = "Ingestion for Bank Al-Maghrib exchange rates and the HCP consumer price index."
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31",
+    "tenacity>=8.2",
+    "psycopg[binary]>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "responses>=0.25",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+dirham-watch = "dirham_watch.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+    "db: needs a Postgres reachable through the WAREHOUSE_* variables",
+]

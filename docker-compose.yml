@@ -1,0 +1,185 @@
+# Dirham Watch: Postgres + Airflow (LocalExecutor) + dbt + Metabase.
+#   cp .env.example .env   # then set the passwords
+#   docker compose up -d --build
+# Airflow: http://localhost:8080   Metabase: http://localhost:3000 (ports set in .env)
+
+name: dirham-watch
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: docker/airflow/Dockerfile
+  image: dirham-watch-airflow:latest
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD:?set AIRFLOW_DB_PASSWORD in .env}@postgres:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    # DAGs start unpaused so the stack loads its history on the first `up`.
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-apiserver:8080/execution/
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?set AIRFLOW_JWT_SECRET in .env}
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "30"
+    WAREHOUSE_HOST: postgres
+    WAREHOUSE_PORT: "5432"
+    WAREHOUSE_DB: warehouse
+    WAREHOUSE_USER: dirham
+    WAREHOUSE_PASSWORD: ${WAREHOUSE_PASSWORD:?set WAREHOUSE_PASSWORD in .env}
+    BAM_API_KEY: ${BAM_API_KEY:-}
+    BAM_BOND_API_KEY: ${BAM_BOND_API_KEY:-}
+    BAM_REQUESTS_PER_MINUTE: ${BAM_REQUESTS_PER_MINUTE:-5}
+    FX_SOURCE: ${FX_SOURCE:-auto}
+    FX_BACKFILL_SOURCE: ${FX_BACKFILL_SOURCE:-frankfurter}
+    FX_BACKFILL_START: ${FX_BACKFILL_START:-2010-01-01}
+    # Empty means all 30 currencies Bank Al-Maghrib quotes.
+    FX_CURRENCIES: ${FX_CURRENCIES:-}
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./dbt:/opt/airflow/dbt
+    - ./exports:/opt/airflow/exports
+    - airflow-logs:/opt/airflow/logs
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on: &airflow-depends-on
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      WAREHOUSE_PASSWORD: ${WAREHOUSE_PASSWORD}
+      AIRFLOW_DB_PASSWORD: ${AIRFLOW_DB_PASSWORD}
+      METABASE_DB_PASSWORD: ${METABASE_DB_PASSWORD:?set METABASE_DB_PASSWORD in .env}
+      METABASE_READER_PASSWORD: ${METABASE_READER_PASSWORD:?set METABASE_READER_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/initdb:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${WAREHOUSE_HOST_PORT:-5433}:5432"
+    healthcheck:
+      # TCP only answers once the init scripts have finished.
+      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -e
+        /entrypoint airflow version
+        airflow pools set dbt 1 "One dbt invocation at a time"
+        cd /opt/airflow/dbt && /opt/dbt-venv/bin/dbt deps
+    environment:
+      <<: *airflow-env
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?set AIRFLOW_ADMIN_PASSWORD in .env}
+
+  airflow-apiserver:
+    <<: *airflow-common
+    command: api-server
+    ports:
+      - "${AIRFLOW_HOST_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+      # LocalExecutor runs tasks in this container and they report to the execution API:
+      # starting before the API server is up leaves the first tasks stranded.
+      airflow-apiserver:
+        condition: service_healthy
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  metabase:
+    image: metabase/metabase:v0.63.18.2
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: postgres
+      MB_DB_PORT: "5432"
+      MB_DB_DBNAME: metabase
+      MB_DB_USER: metabase
+      MB_DB_PASS: ${METABASE_DB_PASSWORD}
+      MB_ANON_TRACKING_ENABLED: "false"
+      MB_CHECK_FOR_UPDATES: "false"
+      JAVA_TIMEZONE: UTC
+    ports:
+      - "${METABASE_HOST_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  metabase-setup:
+    image: python:3.12-slim
+    command: ["python", "/setup/setup_metabase.py"]
+    environment:
+      MB_URL: http://metabase:3000
+      MB_PUBLIC_URL: http://localhost:${METABASE_HOST_PORT:-3000}
+      MB_ADMIN_EMAIL: ${MB_ADMIN_EMAIL:?set MB_ADMIN_EMAIL in .env}
+      MB_ADMIN_PASSWORD: ${MB_ADMIN_PASSWORD:?set MB_ADMIN_PASSWORD in .env}
+      WAREHOUSE_HOST: postgres
+      WAREHOUSE_PORT: "5432"
+      WAREHOUSE_DB: warehouse
+      METABASE_READER_USER: metabase_reader
+      METABASE_READER_PASSWORD: ${METABASE_READER_PASSWORD}
+    volumes:
+      - ./metabase:/setup:ro
+    depends_on:
+      metabase:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres-data:
+  airflow-logs:

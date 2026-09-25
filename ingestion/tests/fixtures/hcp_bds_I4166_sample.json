@@ -1,0 +1,141 @@
+{
+ "iid": 77,
+ "code": "I4166",
+ "label": "Indice des prix à la consommation (Mensuel) (Base 100 2017)",
+ "metaData": {
+  "unit": "Indice",
+  "frequency": "M",
+  "source": "Division des Indices Statistiques (HCP)",
+  "definitionFr": "L'indice des prix à la consommation (base 100 : 2017) mesure la variation relative des prix à la consommation d’un panier fixe de produits consommés par les ménages marocains.",
+  "footNotesFr": null,
+  "methodOfCalculationFr": null
+ },
+ "periods": [
+  "2026M5",
+  "2026M4",
+  "2025M5"
+ ],
+ "dimensions": [
+  {
+   "id": 78,
+   "rank": 1,
+   "label": "Villes",
+   "modalites": [
+    {
+     "id": 956,
+     "rank": 3,
+     "label": "Fès",
+     "total": false
+    },
+    {
+     "id": 972,
+     "rank": 19,
+     "label": "National",
+     "total": true
+    }
+   ]
+  },
+  {
+   "id": 79,
+   "rank": 2,
+   "label": "Divisions et groupes de produits",
+   "modalites": [
+    {
+     "id": 973,
+     "rank": 1,
+     "label": "(GR) GENERAL",
+     "total": true
+    },
+    {
+     "id": 974,
+     "rank": 2,
+     "label": "(01) PRODUITS ALIMENTAIRES ET BOISSONS NON ALCOOLISÉES",
+     "total": false
+    },
+    {
+     "id": 976,
+     "rank": 4,
+     "label": "(0111) PAIN ET CEREALES",
+     "total": false
+    }
+   ]
+  }
+ ],
+ "isShutOff": false,
+ "shutOffComment": null,
+ "updatingDate": 1782131181708,
+ "data": {
+  "972.973_2025M5": {
+   "value": "119.0",
+   "footNote": null
+  },
+  "972.973_2026M4": {
+   "value": "121.5",
+   "footNote": null
+  },
+  "972.973_2026M5": {
+   "value": "120.4",
+   "footNote": null
+  },
+  "972.974_2025M5": {
+   "value": "129.4",
+   "footNote": null
+  },
+  "972.974_2026M4": {
+   "value": "131.1",
+   "footNote": null
+  },
+  "972.974_2026M5": {
+   "value": "128.2",
+   "footNote": null
+  },
+  "972.976_2025M5": {
+   "value": "119.0",
+   "footNote": null
+  },
+  "972.976_2026M4": {
+   "value": "118.2",
+   "footNote": null
+  },
+  "972.976_2026M5": {
+   "value": "118.2",
+   "footNote": null
+  },
+  "956.973_2025M5": {
+   "value": "122.6",
+   "footNote": null
+  },
+  "956.973_2026M4": {
+   "value": "123.6",
+   "footNote": null
+  },
+  "956.973_2026M5": {
+   "value": "122.3",
+   "footNote": null
+  },
+  "956.976_2025M5": {
+   "value": "130.0",
+   "footNote": null
+  },
+  "956.976_2026M4": {
+   "value": "129.0",
+   "footNote": null
+  },
+  "956.976_2026M5": {
+   "value": "128.8",
+   "footNote": null
+  },
+  "956.974_2025M5": {
+   "value": "133.7",
+   "footNote": null
+  },
+  "956.974_2026M4": {
+   "value": "132.9",
+   "footNote": null
+  },
+  "956.974_2026M5": {
+   "value": "130.2",
+   "footNote": null
+  }
+ }
+}

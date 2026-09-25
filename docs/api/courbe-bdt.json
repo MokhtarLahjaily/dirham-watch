@@ -1,0 +1,62 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Courbe des Taux BDT",
+        "description": "",
+        "version": "Version1"
+    },
+    "servers": [
+        {
+            "url": "https://api.centralbankofmorocco.ma/mo/Version1"
+        }
+    ],
+    "paths": {
+        "/api/CourbeBDT": {
+            "get": {
+                "summary": "GET (CourbeBDT)",
+                "description": "Le volume est exprimé en millions de dirhams",
+                "operationId": "5c3efa2502a14e29f96e29e3",
+                "parameters": [
+                    {
+                        "name": "dateCourbe",
+                        "in": "query",
+                        "description": "Date Courbe(2019-01-02) par défaut la date du jour -1 ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "204": {
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "apiKeyHeader": {
+                "type": "apiKey",
+                "name": "Ocp-Apim-Subscription-Key",
+                "in": "header"
+            },
+            "apiKeyQuery": {
+                "type": "apiKey",
+                "name": "subscription-key",
+                "in": "query"
+            }
+        }
+    },
+    "security": [
+        {
+            "apiKeyHeader": []
+        },
+        {
+            "apiKeyQuery": []
+        }
+    ]
+}

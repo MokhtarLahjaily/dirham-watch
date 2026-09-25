@@ -1,0 +1,151 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Marché des adjudications des bons du Trésor",
+        "description": "",
+        "version": "Version1"
+    },
+    "servers": [
+        {
+            "url": "https://api.centralbankofmorocco.ma/adju/Version1"
+        }
+    ],
+    "paths": {
+        "/api/GenTELADJ": {
+            "get": {
+                "summary": "Résultat des opérations de la politique monétaire",
+                "operationId": "r-sultat-des-op-rations-d-change-de-bons-du-tr-sor",
+                "parameters": [
+                    {
+                        "name": "dateAdjudicationDu",
+                        "in": "query",
+                        "description": "Date Adjudication Du Format(AAAA-MM-JJ)",
+                        "required": true,
+                        "schema": {
+                            "type": ""
+                        }
+                    },
+                    {
+                        "name": "dateAdjudicationAu",
+                        "in": "query",
+                        "description": "Date Adjudication Au Format(AAAA-MM-JJ)",
+                        "schema": {
+                            "type": ""
+                        }
+                    },
+                    {
+                        "name": "instrument",
+                        "in": "query",
+                        "description": "Valeurs : Avances à 7 jours = AVANCES7J | Avances à 24 heures= AVANCES24H | Opérations de réglage fin pension livrée = PENSLRF | Opérations de long terme pension livrée = PENSLLT | Opérations de long terme prêt garanti = PRETGAR",
+                        "schema": {
+                            "type": ""
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "204": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/TELADJRachat": {
+            "get": {
+                "summary": "Résultats des opérations de rachat de bons du Trésor",
+                "operationId": "r-sultats-des-op-rations-de-rachat-de-bons-du-tr-sor",
+                "parameters": [
+                    {
+                        "name": "dateEcheance",
+                        "in": "query",
+                        "description": "Date Échéance de la séance Format(AAAA-MM-JJ)",
+                        "required": true,
+                        "schema": {
+                            "type": ""
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "204": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/TELADJAdjuNormal": {
+            "get": {
+                "summary": "Résultats des émissions de bons du Trésor",
+                "operationId": "r-sultats-des-missions-de-bons-du-tr-sor",
+                "parameters": [
+                    {
+                        "name": "dateReglement",
+                        "in": "query",
+                        "description": "Date règlement de la séance d'adjudication Format(AAAA-MM-JJ)",
+                        "required": true,
+                        "schema": {
+                            "type": "Date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "204": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/TELADJEchange": {
+            "get": {
+                "summary": "Résultats des opérations d'échange de bons du Trésor",
+                "description": "Résultats des opérations\nd'échange de bons du Trésor",
+                "operationId": "r-sultats-des-op-rations-d-change-de-bons-du-tr-sor",
+                "parameters": [
+                    {
+                        "name": "dateReglement",
+                        "in": "query",
+                        "description": "date de réglement Format(AAAA-MM-JJ)",
+                        "required": true,
+                        "schema": {
+                            "type": "Date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "apiKeyHeader": {
+                "type": "apiKey",
+                "name": "Ocp-Apim-Subscription-Key",
+                "in": "header"
+            },
+            "apiKeyQuery": {
+                "type": "apiKey",
+                "name": "subscription-key",
+                "in": "query"
+            }
+        }
+    },
+    "security": [
+        {
+            "apiKeyHeader": []
+        },
+        {
+            "apiKeyQuery": []
+        }
+    ]
+}

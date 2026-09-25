@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  AIRFLOW_VERSION: "3.3.2"
+  # A throwaway warehouse in a Postgres service container.
+  WAREHOUSE_HOST: localhost
+  WAREHOUSE_PORT: "5432"
+  WAREHOUSE_DB: warehouse
+  WAREHOUSE_USER: ci
+  WAREHOUSE_PASSWORD: ci
+  # The fixtures end on 2026-03-31; freshness is measured as of the next business day.
+  DBT_VARS: '{as_of_date: "2026-04-01"}'
+
+jobs:
+  lint:
+    name: Lint (ruff, sqlfluff, compose)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install ruff "sqlfluff~=4.3"
+      - run: ruff check .
+      - run: ruff format --check .
+      - name: sqlfluff lint
+        working-directory: dbt
+        run: sqlfluff lint models tests
+      - name: docker compose config
+        run: cp .env.example .env && docker compose config --quiet
+
+  ingestion:
+    name: Ingestion tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: warehouse
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: ingestion/pyproject.toml
+      - run: pip install -e "ingestion[dev]"
+      - name: pytest (unit + Postgres load tests)
+        working-directory: ingestion
+        run: pytest -v
+
+  dbt:
+    name: dbt build on fixtures
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: warehouse
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+    env:
+      DBT_PROFILES_DIR: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -e ingestion "dbt-core~=1.12.0" "dbt-postgres~=1.11.0"
+      - name: Load real-data fixtures into raw
+        run: python scripts/load_ci_fixtures.py
+      - run: dbt deps
+        working-directory: dbt
+      - name: dbt build (models, unit tests, data tests)
+        working-directory: dbt
+        run: dbt build --vars "$DBT_VARS"
+      - name: dbt source freshness (business days)
+        working-directory: dbt
+        run: dbt source freshness --vars "$DBT_VARS"
+
+  dags:
+    name: Airflow DAG integrity
+    runs-on: ubuntu-latest
+    env:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install Airflow with its constraints
+        run: |
+          pip install "apache-airflow==${AIRFLOW_VERSION}" -e ingestion pytest \
+            --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+      - run: pytest -v airflow/tests

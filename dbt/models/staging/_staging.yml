@@ -1,0 +1,160 @@
+version: 2
+
+models:
+  - name: stg_fx_daily
+    description: >
+      Daily MAD exchange rates, one row per business day and currency, typed and
+      deduplicated. Normalised to MAD per 1 unit of the foreign currency.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [rate_date, currency_code]
+    columns:
+      - name: rate_date
+        data_tests: [not_null]
+      - name: currency_code
+        description: ISO 4217 code.
+        data_tests: [not_null]
+      - name: mad_per_unit
+        description: Dirhams for 1 unit of the currency (mid rate).
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+          - dbt_utils.accepted_range:
+              name: stg_fx_daily_eur_mad_in_plausible_range
+              arguments:
+                min_value: 9
+                max_value: 13
+              config:
+                where: "currency_code = 'EUR'"
+          - dbt_utils.accepted_range:
+              name: stg_fx_daily_usd_mad_in_plausible_range
+              arguments:
+                min_value: 6.5
+                max_value: 12
+              config:
+                where: "currency_code = 'USD'"
+      - name: quote_unit
+        description: Unit the source quoted in (100 for JPY), kept for traceability.
+      - name: is_mid_derived
+        description: True when the mid rate was computed from bid/ask (pre-2016 BAM data).
+        data_tests: [not_null]
+      - name: source_system
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["bam", "frankfurter"]
+
+  - name: stg_cpi_monthly
+    description: >
+      HCP consumer price index (base 100 = 2017), one row per month, city and product
+      group. `-` placeholders are dropped.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [index_month, city, group_code]
+    columns:
+      - name: index_month
+        description: First day of the month.
+        data_tests: [not_null]
+      - name: city
+        description: One of 18 cities, or `National`.
+        data_tests: [not_null]
+      - name: group_code
+        description: "`GR` (all items) or a 2 to 4 digit product code."
+        data_tests: [not_null]
+      - name: group_level
+        description: 0 = all items, 1 = division, 2 = group, 3 = class.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1, 2, 3]
+                quote: false
+      - name: cpi_index
+        description: >
+          Index, 2017 average = 100. Fine-grained groups can move far: jewellery passed 300
+          in 2026 with the price of gold.
+        data_tests:
+          - not_null
+          # Wide bounds for every series catch unit or decimal errors...
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 10
+                max_value: 1000
+          # ...tight ones for all items and the 12 divisions.
+          - dbt_utils.accepted_range:
+              name: stg_cpi_monthly_headline_and_divisions_plausible
+              arguments:
+                min_value: 60
+                max_value: 200
+              config:
+                where: "group_level <= 1"
+      - name: is_mislabeled_in_source
+        description: >
+          True when this city series is an exact copy of a national series for another
+          product group, a defect of the former data.gov.ma source; fct_cpi_yoy leaves such
+          series out.
+        data_tests: [not_null]
+
+unit_tests:
+  - name: stg_fx_daily_normalises_units_and_prefers_bam
+    description: >
+      Per-100 quotes are divided by their unit, pre-2016 bid/ask rows use the midpoint,
+      duplicate API rows collapse, the direct BAM value beats the mirror even when the mirror
+      was loaded later, and within a source the latest load wins.
+    model: stg_fx_daily
+    given:
+      - input: source('raw', 'fx_rates')
+        rows:
+          - {source: bam, rate_date: 2026-03-26, currency: EUR, unit: 1, mid_rate: 10.7729, loaded_at: "2026-03-26 13:00:00+00"}
+          - {source: bam, rate_date: 2026-03-26, currency: EUR, unit: 1, mid_rate: 10.7729, loaded_at: "2026-03-26 13:00:00+00"}
+          - {source: frankfurter, rate_date: 2026-03-26, currency: EUR, unit: 1, mid_rate: 10.7730, loaded_at: "2026-03-27 13:00:00+00"}
+          - {source: bam, rate_date: 2026-03-26, currency: JPY, unit: 100, mid_rate: 5.8475, loaded_at: "2026-03-26 13:00:00+00"}
+          - {source: bam, rate_date: 2012-05-02, currency: USD, unit: 1, bid_rate: 8.5, ask_rate: 8.6, loaded_at: "2026-03-26 13:00:00+00"}
+          - {source: bam, rate_date: 2012-05-02, currency: " eu1", unit: 1, mid_rate: 1, loaded_at: "2026-03-26 13:00:00+00"}
+          - {source: frankfurter, rate_date: 2026-09-24, currency: GBP, unit: 1, mid_rate: 12.5, loaded_at: "2026-09-24 13:00:00+00"}
+          - {source: frankfurter, rate_date: 2026-09-24, currency: GBP, unit: 1, mid_rate: 12.6, loaded_at: "2026-09-25 13:00:00+00"}
+    expect:
+      rows:
+        - {rate_date: 2026-03-26, currency_code: EUR, mad_per_unit: 10.7729, is_mid_derived: false, source_system: bam}
+        - {rate_date: 2026-03-26, currency_code: JPY, mad_per_unit: 0.058475, is_mid_derived: false, source_system: bam}
+        - {rate_date: 2012-05-02, currency_code: USD, mad_per_unit: 8.55, is_mid_derived: true, source_system: bam}
+        - {rate_date: 2026-09-24, currency_code: GBP, mad_per_unit: 12.6, is_mid_derived: false, source_system: frankfurter}
+
+  - name: stg_cpi_monthly_parses_codes_and_flags_copied_series
+    description: >
+      Parses product codes and levels, drops '-' placeholders, and flags a city series that
+      repeats a national series of another group (the former data.gov.ma defect). Constant series
+      that coincide, like Oujda's and a national group both at 100, are not flagged.
+    model: stg_cpi_monthly
+    given:
+      - input: source('raw', 'cpi_index')
+        rows:
+          - {city: National, product_group: "(GR) GENERAL", period_month: 2024-10-01, index_value: "119.4"}
+          - {city: National, product_group: "(GR) GENERAL", period_month: 2024-11-01, index_value: "119.2"}
+          - {city: National, product_group: "(01) PRODUITS ALIMENTAIRES ET BOISSONS NON ALCOOLISÉES", period_month: 2024-10-01, index_value: "120"}
+          - {city: National, product_group: "(01) PRODUITS ALIMENTAIRES ET BOISSONS NON ALCOOLISÉES", period_month: 2024-11-01, index_value: "120.4"}
+          - {city: National, product_group: "(12) BIENS ET SERVICES DIVERS", period_month: 2024-10-01, index_value: "100"}
+          - {city: National, product_group: "(12) BIENS ET SERVICES DIVERS", period_month: 2024-11-01, index_value: "100"}
+          - {city: Fès, product_group: "(GR) GENERAL", period_month: 2024-10-01, index_value: "120"}
+          - {city: Fès, product_group: "(GR) GENERAL", period_month: 2024-11-01, index_value: "120.4"}
+          - {city: Fès, product_group: "(0111) PAIN ET CEREALES", period_month: 2024-11-01, index_value: "-"}
+          - {city: Oujda, product_group: "(GR) GENERAL", period_month: 2024-10-01, index_value: "100"}
+          - {city: Oujda, product_group: "(GR) GENERAL", period_month: 2024-11-01, index_value: "100"}
+          - {city: Rabat, product_group: "(011) PRODUITS ALIMENTAIRES", period_month: 2024-11-01, index_value: "118"}
+    expect:
+      rows:
+        - {index_month: 2024-10-01, city: National, group_code: GR, group_level: 0, group_label: GENERAL, cpi_index: 119.4, is_mislabeled_in_source: false}
+        - {index_month: 2024-11-01, city: National, group_code: GR, group_level: 0, group_label: GENERAL, cpi_index: 119.2, is_mislabeled_in_source: false}
+        - {index_month: 2024-10-01, city: National, group_code: "01", group_level: 1, group_label: "PRODUITS ALIMENTAIRES ET BOISSONS NON ALCOOLISÉES", cpi_index: 120, is_mislabeled_in_source: false}
+        - {index_month: 2024-11-01, city: National, group_code: "01", group_level: 1, group_label: "PRODUITS ALIMENTAIRES ET BOISSONS NON ALCOOLISÉES", cpi_index: 120.4, is_mislabeled_in_source: false}
+        - {index_month: 2024-10-01, city: National, group_code: "12", group_level: 1, group_label: BIENS ET SERVICES DIVERS, cpi_index: 100, is_mislabeled_in_source: false}
+        - {index_month: 2024-11-01, city: National, group_code: "12", group_level: 1, group_label: BIENS ET SERVICES DIVERS, cpi_index: 100, is_mislabeled_in_source: false}
+        - {index_month: 2024-10-01, city: Fès, group_code: GR, group_level: 0, group_label: GENERAL, cpi_index: 120, is_mislabeled_in_source: true}
+        - {index_month: 2024-11-01, city: Fès, group_code: GR, group_level: 0, group_label: GENERAL, cpi_index: 120.4, is_mislabeled_in_source: true}
+        - {index_month: 2024-10-01, city: Oujda, group_code: GR, group_level: 0, group_label: GENERAL, cpi_index: 100, is_mislabeled_in_source: false}
+        - {index_month: 2024-11-01, city: Oujda, group_code: GR, group_level: 0, group_label: GENERAL, cpi_index: 100, is_mislabeled_in_source: false}
+        - {index_month: 2024-11-01, city: Rabat, group_code: "011", group_level: 2, group_label: PRODUITS ALIMENTAIRES, cpi_index: 118, is_mislabeled_in_source: false}

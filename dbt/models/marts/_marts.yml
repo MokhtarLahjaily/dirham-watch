@@ -1,0 +1,181 @@
+version: 2
+
+models:
+  - name: fct_fx_monthly
+    description: >
+      Monthly MAD exchange rates per currency: average, min, max and end-of-month value,
+      with month-on-month and year-on-year change of the average (fractions: 0.012 = +1.2 %).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [rate_month, currency_code]
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "avg_mad_per_unit between min_mad_per_unit and max_mad_per_unit"
+    columns:
+      - name: rate_month
+        data_tests: [not_null]
+      - name: currency_code
+        data_tests: [not_null]
+      - name: avg_mad_per_unit
+        data_tests: [not_null]
+      - name: quoted_days
+        description: Business days with a published rate.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 23
+      - name: mom_change
+        description: Change of the monthly average versus the previous calendar month.
+        data_tests:
+          - dbt_utils.accepted_range:
+              name: fct_fx_monthly_eur_usd_mom_change_plausible
+              arguments:
+                min_value: -0.1
+                max_value: 0.1
+              config:
+                where: "currency_code in ('EUR', 'USD')"
+      - name: yoy_change
+        description: Change of the monthly average versus the same month a year earlier.
+      - name: is_month_complete
+        description: False for the newest month in the data, which is still filling up.
+        data_tests: [not_null]
+
+  - name: fct_cpi_yoy
+    description: >
+      Consumer price index per month, city and product group with month-on-month and
+      year-on-year inflation (fractions). Computed from the published one-decimal indices.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [index_month, city, group_code]
+    columns:
+      - name: index_month
+        data_tests: [not_null]
+      - name: cpi_index
+        data_tests: [not_null]
+      - name: yoy_change
+        data_tests:
+          - dbt_utils.accepted_range:
+              name: fct_cpi_yoy_headline_inflation_plausible
+              arguments:
+                min_value: -0.05
+                max_value: 0.2
+              config:
+                where: "group_code = 'GR'"
+
+  - name: mart_fx_vs_inflation
+    description: >
+      One row per month since the CPI base year (2017): MAD/EUR and MAD/USD monthly
+      averages next to national inflation. `*_index` columns are rebased so that the base
+      year averages 100, like the CPI. A rising EUR index means a weaker dirham against the
+      euro.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: >
+              basket_index between least(eur_mad_index, usd_mad_index) - 0.01
+              and greatest(eur_mad_index, usd_mad_index) + 0.01
+          config:
+            where: "basket_index is not null"
+    columns:
+      - name: report_month
+        description: First day of the month.
+        data_tests: [unique, not_null]
+      - name: eur_mad
+        description: Average MAD per EUR over the month.
+      - name: usd_mad
+        description: Average MAD per USD over the month.
+      - name: eur_mad_index
+        description: MAD/EUR, base-year average = 100.
+      - name: usd_mad_index
+        description: MAD/USD, base-year average = 100.
+      - name: basket_index
+        description: 0.6 × EUR index + 0.4 × USD index, approximating the dirham basket.
+      - name: cpi_index
+        description: National consumer price index, all items (base 100 = 2017).
+      - name: inflation_yoy
+        description: National year-on-year inflation, all items.
+      - name: food_inflation_yoy
+        description: National year-on-year inflation, food and non-alcoholic beverages.
+      - name: has_cpi
+        description: False for months the CPI file does not cover yet.
+        data_tests: [not_null]
+
+  - name: data_freshness
+    description: >
+      Latest period loaded per dataset and its lag against today (a view, so it is
+      computed when queried).
+    columns:
+      - name: dataset
+        data_tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["fx_rates", "cpi_index"]
+      - name: lag
+        description: Business days (FX) or months (CPI) since the latest period.
+      - name: is_stale
+        data_tests: [not_null]
+
+unit_tests:
+  - name: fct_fx_monthly_compares_only_adjacent_periods
+    description: >
+      February is missing, so March has no month-on-month change instead of being compared
+      with January. The newest month is flagged incomplete.
+    model: fct_fx_monthly
+    given:
+      - input: ref('stg_fx_daily')
+        rows:
+          - {rate_date: 2024-03-01, currency_code: EUR, mad_per_unit: 10.0}
+          - {rate_date: 2024-12-02, currency_code: EUR, mad_per_unit: 10.0}
+          - {rate_date: 2025-01-02, currency_code: EUR, mad_per_unit: 10.0}
+          - {rate_date: 2025-01-03, currency_code: EUR, mad_per_unit: 11.0}
+          - {rate_date: 2025-03-03, currency_code: EUR, mad_per_unit: 10.5}
+    expect:
+      rows:
+        - {rate_month: 2024-03-01, avg_mad_per_unit: 10.0, end_of_month_mad_per_unit: 10.0, quoted_days: 1, mom_change: null, yoy_change: null, is_month_complete: true}
+        - {rate_month: 2024-12-01, avg_mad_per_unit: 10.0, end_of_month_mad_per_unit: 10.0, quoted_days: 1, mom_change: null, yoy_change: null, is_month_complete: true}
+        - {rate_month: 2025-01-01, avg_mad_per_unit: 10.5, end_of_month_mad_per_unit: 11.0, quoted_days: 2, mom_change: 0.05, yoy_change: null, is_month_complete: true}
+        - {rate_month: 2025-03-01, avg_mad_per_unit: 10.5, end_of_month_mad_per_unit: 10.5, quoted_days: 1, mom_change: null, yoy_change: 0.05, is_month_complete: false}
+
+  - name: fct_cpi_yoy_computes_monthly_and_annual_inflation
+    description: Month-on-month and year-on-year changes; series mislabeled in the source are left out.
+    model: fct_cpi_yoy
+    given:
+      - input: ref('stg_cpi_monthly')
+        rows:
+          - {index_month: 2023-01-01, city: National, group_code: GR, cpi_index: 100.0, is_mislabeled_in_source: false}
+          - {index_month: 2023-12-01, city: National, group_code: GR, cpi_index: 105.0, is_mislabeled_in_source: false}
+          - {index_month: 2024-01-01, city: National, group_code: GR, cpi_index: 106.0, is_mislabeled_in_source: false}
+          - {index_month: 2024-01-01, city: Rabat, group_code: GR, cpi_index: 90.0, is_mislabeled_in_source: false}
+          - {index_month: 2024-01-01, city: Meknès, group_code: GR, cpi_index: 150.0, is_mislabeled_in_source: true}
+    expect:
+      rows:
+        - {index_month: 2023-01-01, city: National, mom_change: null, yoy_change: null}
+        - {index_month: 2023-12-01, city: National, mom_change: null, yoy_change: null}
+        - {index_month: 2024-01-01, city: National, mom_change: 0.009524, yoy_change: 0.06}
+        - {index_month: 2024-01-01, city: Rabat, mom_change: null, yoy_change: null}
+
+  - name: data_freshness_counts_business_days_and_months
+    description: >
+      As of Wednesday 2026-09-23, a Friday 2026-09-18 rate is 3 business days old (Mon, Tue,
+      Wed): still fresh. A November 2024 CPI is 22 months old: stale.
+    model: data_freshness
+    overrides:
+      vars:
+        as_of_date: "2026-09-23"
+    given:
+      - input: ref('stg_fx_daily')
+        rows:
+          - {rate_date: 2026-09-17, currency_code: EUR}
+          - {rate_date: 2026-09-18, currency_code: EUR}
+      - input: ref('stg_cpi_monthly')
+        rows:
+          - {index_month: 2024-11-01}
+    expect:
+      rows:
+        - {dataset: fx_rates, latest_period: 2026-09-18, lag: 3, lag_unit: business days, is_stale: false}
+        - {dataset: cpi_index, latest_period: 2024-11-01, lag: 22, lag_unit: months, is_stale: true}
